@@ -20,8 +20,8 @@ def my_thread(file_list):
     signals_path = file_list[0]
     annotations_path = file_list[1]
     
-    signals_save_path = '/mnt/ssd1/dataset/Seoul_dataset/9channel_prefilter/signals/'
-    annotations_save_path = '/mnt/ssd1/dataset/Seoul_dataset/9channel_prefilter/annotations/'
+    signals_save_path = '/home/eslab/dataset/seoulDataset/9channel_prefilter/signals/'
+    annotations_save_path = '/home/eslab/dataset/seoulDataset/9channel_prefilter/annotations/'
     save_filename = '%s%s'%(signals_path.split('/')[-1].split('_')[0] , '.npy')
     file_list = os.listdir(signals_save_path)
     if save_filename in file_list:
@@ -196,14 +196,15 @@ def my_thread(file_list):
                     print('Two data length is same')
 
 
-def make_edf_to_npy_usingmne(directory_path='/mnt/ssd1/dataset/seoulUniv/'):
+def make_edf_to_npy_usingmne(directory_path='/home/eslab/dataset/origin_edf/seoulDataset/'):
     signals_list = []
     annotations_list = []
     path_list = []
     cpu_num = multiprocessing.cpu_count()
-    signals_save_path = '/mnt/ssd1/dataset/Seoul_dataset/9channel_prefilter/signals/'
+    
+    signals_save_path = '/home/eslab/dataset/seoulDataset/9channel_prefilter/signals/'
     os.makedirs(signals_save_path,exist_ok=True)
-    annotations_save_path = '/mnt/ssd1/dataset/Seoul_dataset/9channel_prefilter/annotations/'
+    annotations_save_path = '/home/eslab/dataset/seoulDataset/9channel_prefilter/annotations/'
     os.makedirs(annotations_save_path,exist_ok=True)
     print('cpu_num : ',cpu_num)
     for (path, dir, files) in os.walk(directory_path):
@@ -241,6 +242,7 @@ def make_edf_to_npy_usingmne(directory_path='/mnt/ssd1/dataset/seoulUniv/'):
 
 def check_dataset_truth():
     cpu_num = multiprocessing.cpu_count()
+    
     signals_save_path = '/mnt/ssd1/dataset/Seoul_dataset/9channel_prefilter/signals/'
     annotations_save_path = '/mnt/ssd1/dataset/Seoul_dataset/9channel_prefilter/annotations/'
     file_list = os.listdir(signals_save_path)

@@ -126,7 +126,10 @@ def train_rnn_dataloader_onePerson(save_filename,logging_filename,load_filename,
         print('Optimizer : SGD')
         optimizer = torch.optim.SGD([{'params': FeatureExtract.parameters(), 'lr': 0},
                                      {'params': Classification.parameters()}], lr=learning_rate, momentum=0.9)
-
+    elif optim =='AdamW':
+        print('Optimizer : AdamW')
+        optimizer = torch.optim.AdamW([{'params': FeatureExtract.parameters(), 'lr': 0},
+                                     {'params': Classification.parameters()}], lr=learning_rate, betas=(b1, b2))
 
     gamma = 0.8
 
@@ -365,7 +368,7 @@ def training_rnn_dataloader_onePerson(use_cudaNum=0,sequence_length=25,window_si
 
     learning_rate = 0.001
     loss_function = 'CE'
-    optim = 'Adam'
+    optim = 'AdamW'
 
 
     # data loader iteration 횟수 감소
@@ -377,9 +380,9 @@ def training_rnn_dataloader_onePerson(use_cudaNum=0,sequence_length=25,window_si
     noise_scale = 2e-6
     scheduler_list = ['WarmUp_restart_gamma'] # 'WarmUp_restart'
     for scheduler in scheduler_list:
-        load_filename = model_load_path + 'ResNet_ensemble_branch_dataloaer_hallym_%.4f_%s_%s_%s_FE.pth'%(learning_rate,optim,loss_function,scheduler)
-        save_filename = model_save_path + 'ResNet_ensemble_branch_dataloaer_eachPerson_hallym_%.4f_%s_%s_%s_lstm_%d_%d_%d_%d.pth'%(learning_rate,optim,loss_function,scheduler,sequence_length,window_size,num_layers,hidden_dim)
-        logging_filename = logging_save_path + 'ResNet_ensemble_branch_dataloaer_eachPerson_hallym_%.4f_%s_%s_%s_%d_%d_%d_%d.txt'%(learning_rate,optim,loss_function,scheduler,sequence_length,window_size,num_layers,hidden_dim)
+        load_filename = model_load_path + 'ResNet_ensemble_branch_dataloaer_seoul_3channel_0.0100_AdamW_CE_WarmUp_restart_gamma_FE.pth'
+        save_filename = model_save_path + 'ResNet_ensemble_branch_dataloaer_seoul_3channel_0.0100_AdamW_CE_WarmUp_restart_gamma_eachPerson_lstm.pth'
+        logging_filename = logging_save_path + 'ResNet_ensemble_branch_dataloaer_seoul_3channel_0.0100_AdamW_CE_WarmUp_restart_gamma_eachPerson_lstm.txt'
 
         train_rnn_dataloader_onePerson(save_filename=save_filename,logging_filename=logging_filename,load_filename=load_filename,signals_path=signals_path, train_dataset_list=training_fold_list,val_dataset_list=validation_fold_list,
                                                     epochs=epochs,batch_size=batch_size,learning_rate=learning_rate,

@@ -11,19 +11,24 @@ from train.rnn.train_rnn import *
 from train.rnn.train_rnn_cuda1 import *
 from utils.makeDataset.SeoulUniv.make_edf_to_npy import *
 from utils.makeDataset.SeoulUniv.make_dataloader import *
+from utils.makeDataset.SeoulUniv.check_dataset_info import *
 use_cudaNum = 1
 
 if __name__=='__main__':
-    signals_path = '/home/eslab/dataset/Seoul_dataset/3channel_dataloader/A2019-NX-01-0254_3_/'
-    data_list = os.listdir(signals_path)
-    print(data_list[0])
+    check_severity()
+    # make_selectChannel_npy()
+    # makeFeatureExtract_savefile()
+    # make_edf_to_npy_usingmne()
+    # signals_path = '/home/eslab/dataset/Seoul_dataset/3channel_dataloader/A2019-NX-01-0254_3_/'
+    # data_list = os.listdir(signals_path)
+    # print(data_list[0])
 
-    signals = np.load(signals_path + data_list[0])
+    # signals = np.load(signals_path + data_list[0])
 
-    print(signals.shape)
-    plt.plot(signals[0,:])
-    plt.savefig('./fig')
-    plt.cla()
+    # print(signals.shape)
+    # plt.plot(signals[0,:])
+    # plt.savefig('./fig')
+    # plt.cla()
     # make_edf_to_npy_usingmne()
     # make_dataloader_dataset()
     # make_selectChannel_npy()

@@ -4,8 +4,9 @@ from utils.function.dataloader_custom import *
 from utils.function.loss_fn import *
 from models.cnn.ResNet import *
 from utils.function.scheduler import *
-
-def train_cnn_dataloader_seoul(save_filename,logging_filename,signals_path, train_dataset_list,val_dataset_list,batch_size = 10000,
+from models.cnn.custom_model import *
+from models.cnn.ResSENet import *
+def train_cnn_dataloader_seoul_new(save_filename,logging_filename,signals_path, train_dataset_list,val_dataset_list,batch_size = 10000,
                                                  epochs=2000,learning_rate=0.001,use_scaling=False,scaling=1e+6,
                                           optim='Adam',loss_function='CE',epsilon=0.7,noise_scale=2e-6,
                                           use_noise=True,preprocessing=False,preprocessing_methods='Standard',use_cut = False, cut_value = 192e-6,use_channel=[0,1,2],scheduler=None,warmup_iter=10,cosine_decay_iter=40,stop_iter=300,gamma=0.8):
@@ -54,7 +55,13 @@ def train_cnn_dataloader_seoul(save_filename,logging_filename,signals_path, trai
     # model = resnet18_custom_withoutDropout(in_channel=3, layer_filters=[64, 128, 256, 512], first_conv=[7, 2, 3],
     #                                        block_kernel_size=3,
     #                                        padding=1, use_batchnorm=True, num_classes=5)
-    model = resnet18_200hz_withDropout_temporal()
+    # model = resnet18_200hz_withDropout_ensemble_branch_new()
+    # model = resnet18_200hz_withDropout_ensemble_branch_twoChannel_attention()
+    # model = resnet18_200hz_withDropout_ensemble_branch_twoChannel_attention_new()
+    # model = resnet18_200hz_withDropout_ensemble_branch_twoChannel_attention_new1(first_conv_small=[49,20,29],first_conv_big=[199,20,99])
+    # model = custom_model1()
+    # model = resnet50se_200hz_withoutDropout_ensemble_branch_twoChannel()
+    model = resnet50se_200hz_withDropout_ensemble_branch_twoChannel()
     # model = resnet18_withoutDropout_200hz(in_channel=1,layer_filters=layer_filters,first_conv=first_conv,num_classes=5)
 
     # model.apply(weights_init)  # weight init
@@ -104,8 +111,9 @@ def train_cnn_dataloader_seoul(save_filename,logging_filename,signals_path, trai
     elif optim == 'SGD':
         print('Optimizer : SGD')
         optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
-    elif optim =='AdamW':
-        optimizer = torch.optim.AdamW(model.parameters(),lr=learning_rate,betas=(b1,b2))
+    elif optim == 'AdamW':
+        print('Optimizer AdamW')
+        optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, betas=(b1, b2))
 
 
     gamma = 0.8
@@ -169,7 +177,7 @@ def train_cnn_dataloader_seoul(save_filename,logging_filename,signals_path, trai
                 batch_label = batch_label.long().to(device)
 
                 optimizer.zero_grad()
-                # print(batch_signal.shape)
+
                 pred = model(batch_signal)
                 
                 # norm = 0
@@ -276,12 +284,14 @@ def train_cnn_dataloader_seoul(save_filename,logging_filename,signals_path, trai
     check_file.close()
 
 
-def training_cnn_dataloader_seoul():
-    model_save_path = '/home/eslab/kdy/git/SleepScoring_server/saved_model/Hallym_dataset/seoul/cnn/'
-    logging_save_path = '/home/eslab/kdy/git/SleepScoring_server/log/Hallym_dataset/seoul/cnn/'
+def training_cnn_dataloader_seoul_new():
+    model_save_path = '/home/eslab/kdy/git/SleepScoring_server/saved_model/Hallym_dataset/seoul/cnn_custom/'
+    logging_save_path = '/home/eslab/kdy/git/SleepScoring_server/log/Hallym_dataset/seoul/cnn_custom/'
     validation_len = 200
+
     os.makedirs(model_save_path,exist_ok=True)
     os.makedirs(logging_save_path,exist_ok=True)
+
     signals_path = '/home/eslab/dataset/seoulDataset/9channel_prefilter/signals_dataloader/'
     # signals_path = '/mnt/ssd2/dataset/Seoul_dataset/3channel_prefilter/signals_dataloader/'
     
@@ -301,15 +311,16 @@ def training_cnn_dataloader_seoul():
     print(len(validation_fold_list))
     # exit(1)
     epochs = 3000
-    batch_size = 4000 # 20000 => OOM
-
+    batch_size = 1500
+    
     preprocessing=False
     preprocessing_methods = 'Standard'
 
     learning_rate_list = [0.01]
+    stop_iter = 100
     loss_function = 'CE'
     optim_list= ['AdamW']
-    use_channel = [1,2,3] # C3-M2, C4-M1, E1-M2
+    use_channel = [1,3]
     use_noise = False
     epsilon = 0.8
     noise_scale = 2e-6
@@ -317,12 +328,12 @@ def training_cnn_dataloader_seoul():
     for scheduler in scheduler_list:
         for optim in optim_list:
             for learning_rate in learning_rate_list:
-                save_filename = model_save_path + 'ResNet_ensemble_branch_dataloaer_seoul_3channel_%.4f_%s_%s_%s.txt'%(learning_rate,optim,loss_function,scheduler)
-                logging_filename = logging_save_path + 'ResNet_ensemble_branch_dataloaer_seoul_3channel_%.4f_%s_%s_%s.pth'%(learning_rate,optim,loss_function,scheduler)
-
-                train_cnn_dataloader_seoul(save_filename=save_filename,logging_filename=logging_filename,signals_path=signals_path, train_dataset_list=training_fold_list,val_dataset_list=validation_fold_list,
+                save_filename = model_save_path + 'ResSENet50_withDropout_withoutAttention_dataloaer_seoul_2channel.pth'
+                logging_filename = logging_save_path + 'ResSENet50_withDropout_withoutAttention_dataloaer_seoul_2channel.txt'
+                print(save_filename)
+                train_cnn_dataloader_seoul_new(save_filename=save_filename,logging_filename=logging_filename,signals_path=signals_path, train_dataset_list=training_fold_list,val_dataset_list=validation_fold_list,
                                                             epochs=epochs,batch_size=batch_size,learning_rate=learning_rate,
                                                     optim=optim,loss_function=loss_function,epsilon=epsilon,noise_scale=noise_scale,
-                                                    use_noise=use_noise,preprocessing=preprocessing,preprocessing_methods=preprocessing_methods,scheduler=scheduler,warmup_iter=10,cosine_decay_iter=40,stop_iter=300,use_channel=use_channel
+                                                    use_noise=use_noise,preprocessing=preprocessing,preprocessing_methods=preprocessing_methods,scheduler=scheduler,warmup_iter=10,cosine_decay_iter=40,stop_iter=stop_iter,use_channel=use_channel
                                                 )
 

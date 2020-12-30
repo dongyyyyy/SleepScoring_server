@@ -397,17 +397,53 @@ class Sleep_Dataset_sequence_onePerson(object):
         folder_list = os.listdir(folder_name)
         folder_list.sort()
         # print('folder len : ', len(folder_list))
-        max_len = (len(folder_list)-1)-self.sequence_length
-        
-        # print(f'dif len : {dif_len}')
-        for index in range(0,max_len,self.window_size):
-            for current_index in range(self.sequence_length):
-                # print('current index : ',index+current_index)
-                c_signals = np.load(folder_name+folder_list[index+current_index])
-                c_label = int(folder_list[index+current_index].split('.npy')[0].split('_')[-1])
+        if self.sequence_length != 0: # sequence length가 존재
+            max_len = (len(folder_list)-1)-self.sequence_length
+            
+            # print(f'dif len : {dif_len}')
+            for index in range(0,max_len,self.window_size):
+                for current_index in range(self.sequence_length):
+                    # print('current index : ',index+current_index)
+                    c_signals = np.load(folder_name+folder_list[index+current_index])
+                    c_label = int(folder_list[index+current_index].split('.npy')[0].split('_')[-1])
+                    c_signals = c_signals[self.use_channel]
+                    if len(c_signals) > 10: # 단일채널인 경우
+                        c_signals = c_signals.reshape(1,-1)
+                    if self.use_cuda:
+                        c_signals = torch.from_numpy(c_signals).float()
+
+                    if self.use_scaling:
+                        c_signals = c_signals * self.scaling
+
+                    if self.use_noise:
+                        if np.random.rand() < self.epsilon:
+                            noise = torch.normal(mean=0., std=self.noise_scale, size=c_signals.shape)
+                            c_signals = c_signals + noise
+
+
+                    if current_index == 0:
+                        in_signals = c_signals.unsqueeze(0) # (1,channel, vec)
+                        in_label = c_label
+                    else:
+                        in_signals = torch.cat((in_signals,c_signals.unsqueeze(0))) # (n,channel,vec)
+                        in_label = np.append(in_label,c_label)
+                if index == 0:
+                    signals = in_signals.unsqueeze(0)
+                    label = in_label
+                else:
+                    signals = torch.cat((signals,in_signals.unsqueeze(0)))
+                    label = np.append(label,in_label)
+            #assert len(label) == self.sequence_length, print(f'dif_len : {dif_len } /current_length : {current_length} /start_length : {start_length} / start_num : {start_num} / folder_length : {folder_length} / signals shape : {signals.shape} / label shape : {label.shape}')
+        else: # 하나의 환자 데이터로 학습
+            # print('One person')
+            for index in range(0,len(folder_list),1):
+                c_signals = np.load(folder_name+folder_list[index])
+                c_label = int(folder_list[index].split('.npy')[0].split('_')[-1])
                 c_signals = c_signals[self.use_channel]
+
                 if len(c_signals) > 10: # 단일채널인 경우
                     c_signals = c_signals.reshape(1,-1)
+
                 if self.use_cuda:
                     c_signals = torch.from_numpy(c_signals).float()
 
@@ -419,21 +455,13 @@ class Sleep_Dataset_sequence_onePerson(object):
                         noise = torch.normal(mean=0., std=self.noise_scale, size=c_signals.shape)
                         c_signals = c_signals + noise
 
-
-                if current_index == 0:
-                    in_signals = c_signals.unsqueeze(0) # (1,channel, vec)
-                    in_label = c_label
+                if index == 0:
+                    signals = c_signals.unsqueeze(0) # (1,channel, vec)
+                    label = c_label
                 else:
-                    in_signals = torch.cat((in_signals,c_signals.unsqueeze(0))) # (n,channel,vec)
-                    in_label = np.append(in_label,c_label)
-            if index == 0:
-                signals = in_signals.unsqueeze(0)
-                label = in_label
-            else:
-                signals = torch.cat((signals,in_signals.unsqueeze(0)))
-                label = np.append(label,in_label)
-        #assert len(label) == self.sequence_length, print(f'dif_len : {dif_len } /current_length : {current_length} /start_length : {start_length} / start_num : {start_num} / folder_length : {folder_length} / signals shape : {signals.shape} / label shape : {label.shape}')
-
+                    signals = torch.cat((signals,c_signals.unsqueeze(0))) # (n,channel,vec)
+                    label = np.append(label,c_label)
+        # print(signals.shape)
         return signals,label
 
     def __len__(self):
@@ -501,13 +529,47 @@ class Sleep_Dataset_sequence_val_onePerson(object):
         folder_list.sort()
         max_len = (len(folder_list)-1)-self.sequence_length
         # print(f'dif len : {dif_len}')
-        for index in range(0,max_len,self.sequence_length):
-            for current_index in range(self.sequence_length):
-                c_signals = np.load(folder_name+folder_list[index+current_index])
-                c_label = int(folder_list[index+current_index].split('.npy')[0].split('_')[-1])
+        if self.sequence_length != 0: # sequence length가 존재
+            for index in range(0,max_len,self.sequence_length):
+                for current_index in range(self.sequence_length):
+                    c_signals = np.load(folder_name+folder_list[index+current_index])
+                    c_label = int(folder_list[index+current_index].split('.npy')[0].split('_')[-1])
+                    c_signals = c_signals[self.use_channel]
+                    if len(c_signals) > 10: # 단일채널인 경우
+                        c_signals = c_signals.reshape(1,-1)
+                    if self.use_cuda:
+                        c_signals = torch.from_numpy(c_signals).float()
+
+                    if self.use_scaling:
+                        c_signals = c_signals * self.scaling
+
+                    if self.use_noise:
+                        if np.random.rand() < self.epsilon:
+                            noise = torch.normal(mean=0., std=self.noise_scale, size=c_signals.shape)
+                            c_signals = c_signals + noise
+                    
+
+                    if current_index == 0:
+                        in_signals = c_signals.unsqueeze(0) # (1,channel, vec)
+                        in_label = c_label
+                    else:
+                        in_signals = torch.cat((in_signals,c_signals.unsqueeze(0))) # (n,channel,vec)
+                        in_label = np.append(in_label,c_label)
+                if index == 0:
+                    signals = in_signals.unsqueeze(0)
+                    label = in_label
+                else:
+                    signals = torch.cat((signals,in_signals.unsqueeze(0)))
+                    label = np.append(label,in_label)
+        else:
+            for index in range(0,len(folder_list),1):
+                c_signals = np.load(folder_name+folder_list[index])
+                c_label = int(folder_list[index].split('.npy')[0].split('_')[-1])
                 c_signals = c_signals[self.use_channel]
+
                 if len(c_signals) > 10: # 단일채널인 경우
                     c_signals = c_signals.reshape(1,-1)
+
                 if self.use_cuda:
                     c_signals = torch.from_numpy(c_signals).float()
 
@@ -518,20 +580,14 @@ class Sleep_Dataset_sequence_val_onePerson(object):
                     if np.random.rand() < self.epsilon:
                         noise = torch.normal(mean=0., std=self.noise_scale, size=c_signals.shape)
                         c_signals = c_signals + noise
-                
 
-                if current_index == 0:
-                    in_signals = c_signals.unsqueeze(0) # (1,channel, vec)
-                    in_label = c_label
+                if index == 0:
+                    signals = c_signals.unsqueeze(0) # (1,channel, vec)
+                    label = c_label
                 else:
-                    in_signals = torch.cat((in_signals,c_signals.unsqueeze(0))) # (n,channel,vec)
-                    in_label = np.append(in_label,c_label)
-            if index == 0:
-                signals = in_signals.unsqueeze(0)
-                label = in_label
-            else:
-                signals = torch.cat((signals,in_signals.unsqueeze(0)))
-                label = np.append(label,in_label)
+                    signals = torch.cat((signals,c_signals.unsqueeze(0))) # (n,channel,vec)
+                    label = np.append(label,c_label)
+
         #assert len(label) == self.sequence_length, print(f'dif_len : {dif_len } /current_length : {current_length} /start_length : {start_length} / start_num : {start_num} / folder_length : {folder_length} / signals shape : {signals.shape} / label shape : {label.shape}')
 
         return signals,label
