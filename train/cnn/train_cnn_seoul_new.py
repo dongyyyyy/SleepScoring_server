@@ -61,7 +61,9 @@ def train_cnn_dataloader_seoul_new(save_filename,logging_filename,signals_path, 
     # model = resnet18_200hz_withDropout_ensemble_branch_twoChannel_attention_new1(first_conv_small=[49,20,29],first_conv_big=[199,20,99])
     # model = custom_model1()
     # model = resnet50se_200hz_withoutDropout_ensemble_branch_twoChannel()
-    model = resnet50se_200hz_withDropout_ensemble_branch_twoChannel()
+    # model = resnet50se_200hz_withDropout_ensemble_branch_twoChannel()
+    model = resnet50se_200hz_withDropout_ensemble_branch_twoChannel_Attention_Sigmoid_Channels_small_additional()
+    # model = resnet50se_200hz_withDropout_ensemble_branch_twoChannel_Attention_Sigmoid()
     # model = resnet18_withoutDropout_200hz(in_channel=1,layer_filters=layer_filters,first_conv=first_conv,num_classes=5)
 
     # model.apply(weights_init)  # weight init
@@ -328,8 +330,8 @@ def training_cnn_dataloader_seoul_new():
     for scheduler in scheduler_list:
         for optim in optim_list:
             for learning_rate in learning_rate_list:
-                save_filename = model_save_path + 'ResSENet50_withDropout_withoutAttention_dataloaer_seoul_2channel.pth'
-                logging_filename = logging_save_path + 'ResSENet50_withDropout_withoutAttention_dataloaer_seoul_2channel.txt'
+                save_filename = model_save_path + 'ResSENet50_withDropout_withAttention_sigmoid_dataloaer_seoul_2channel_additional.pth'
+                logging_filename = logging_save_path + 'ResSENet50_withDropout_withAttention_sigmoid_dataloaer_seoul_2channel_additional.txt'
                 print(save_filename)
                 train_cnn_dataloader_seoul_new(save_filename=save_filename,logging_filename=logging_filename,signals_path=signals_path, train_dataset_list=training_fold_list,val_dataset_list=validation_fold_list,
                                                             epochs=epochs,batch_size=batch_size,learning_rate=learning_rate,

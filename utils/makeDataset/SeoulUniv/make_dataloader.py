@@ -1,18 +1,22 @@
 from include.header import *
 from utils.function.function import *
-
 def func_make_dataloader_dataset(filename):
-    signals_path = '/home/eslab/dataset/seoulDataset/9channel_prefilter/signals/'
-    annotations_path = '/home/eslab/dataset/seoulDataset/9channel_prefilter/annotations/'
-    save_path = '/home/eslab/dataset/seoulDataset/9channel_prefilter/signals_dataloader/'
+    signals_path = '/data/hdd1/dataset/Seoul_dataset/9channel_prefilter_butter/signals/'
+    annotations_path = '/data/hdd1/dataset/Seoul_dataset/annotations/'
+    # annotations_path = '/home/ssd1/dataset/Seoul_dataset/9channel_prefilter/annotations/'
+    save_path = '/data/ssd1/dataset/Seoul_dataset/9channel_prefilter_butter/signals_dataloader/'
     # print(file_list)
     # for filename in file_list:
     current_save_path = save_path + filename.split('.npy')[0]+'/'
     os.makedirs(current_save_path,exist_ok=True)
     # print(current_save_path)
+    
     signals = np.load(signals_path+filename)
+    if signals.shape[1] == 0:
+        return
     signals = data_preprocessing_numpy(signals)
     annotations = np.load(annotations_path+filename)
+    
     width = 200 * 30
     signals_len = len(signals[0])// width
     if signals_len == len(annotations):
@@ -34,9 +38,10 @@ def func_make_dataloader_dataset(filename):
         # exit(1)
 
 def make_dataloader_dataset():
-    signals_path = '/home/eslab/dataset/seoulDataset/9channel_prefilter/signals/'
+    signals_path = '/data/hdd1/dataset/Seoul_dataset/9channel_prefilter_butter/signals/'
+    annotations_path = '/data/hdd1/dataset/Seoul_dataset/annotations/'
     # annotations_path = '/home/ssd1/dataset/Seoul_dataset/9channel_prefilter/annotations/'
-    save_path = '/home/eslab/dataset/seoulDataset/9channel_prefilter/signals_dataloader/'
+    save_path = '/data/ssd1/dataset/Seoul_dataset/9channel_prefilter_butter/signals_dataloader/'
     
     os.makedirs(save_path,exist_ok=True)
 
@@ -52,6 +57,7 @@ def make_dataloader_dataset():
     pool.map(func_make_dataloader_dataset,file_list)
     pool.close()
     pool.join()
+
 
 
 

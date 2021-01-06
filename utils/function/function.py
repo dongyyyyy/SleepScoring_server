@@ -63,3 +63,63 @@ def weights_init(m):
 def int_to_string(num):
     str_num = str(num).zfill(4)
     return str_num
+
+# lowpass filter
+def butter_lowpass_filter(data, cutoff, order=4,nyq=100):
+    normal_cutoff = cutoff / nyq
+    # Get the filter coefficients
+    b, a = butter(N=order, Wn=normal_cutoff, btype='low', analog=False,output='ba')
+    y = filtfilt(b, a, data)
+    return y
+
+# highpass filter
+def butter_highpass_filter(data, cutoff, order=4,fs=200):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    # Get the filter coefficients
+    b, a = butter(N=order, Wn=normal_cutoff, btype='high', analog=False,output='ba')
+
+    y = filtfilt(b, a, data)
+    # b = The numerator coefficient vector of the filter (분자)
+    # a = The denominator coefficient vector of the filter (분모)
+
+    return y
+
+def butter_bandpass(lowcut, highcut, fs=200 , order=4):
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    b,a = butter(N=order,Wn=[low,high],btype='bandpass', analog=False,output='ba')
+    return b,a
+
+# bandpass filter
+def butter_bandpass_filter(signals, lowcut, highcut, fs , order = 4):
+    b,a = butter_bandpass(lowcut,highcut,fs,order=order)
+
+    y = lfilter(b,a,signals)
+    return y
+
+def butter_filter_sos(signals, lowcut=None, highcut=None, fs=200 , order =4):
+    if lowcut != None and highcut != None: # bandpass filter
+        sos = signal.butter(N=order,Wn=[lowcut,highcut],btype='bandpass',analog=False,output='sos',fs=fs)
+        filtered = signal.sosfilt(sos,signals)
+    elif lowcut != None and highcut == None: # highpass filter
+        sos = signal.butter(N=order,Wn=lowcut,btype='highpass',analog=False,output='sos',fs=fs)
+    elif lowcut == None and highcut != None: 
+        sos = signal.butter(N=order,Wn=highcut,btype='lowpass',analog=False,output='sos',fs=fs)
+    else: # None filtering
+        return signals 
+    filtered = signal.sosfilt(sos,signals)
+    return filtered
+
+def ellip_filter_sos(signals,rp=6,rs=53, lowcut=None, highcut=None, fs = 200 , order = 4):
+    if lowcut != None and highcut != None: # bandpass filter
+        sos = signal.ellip(N=order,rp=rp,rs=rs,Wn=[lowcut,highcut],btype='bandpass',analog=False,output='sos',fs=fs)
+    elif lowcut != None and highcut == None: # highpass filter
+        sos = signal.ellip(N=order,rp=rp,rs=rs,Wn=lowcut,btype='highpass',analog=False,output='sos',fs=fs)
+    elif lowcut == None and highcut != None: 
+        sos = signal.ellip(N=order,rp=rp,rs=rs,Wn=highcut,btype='lowpass',analog=False,output='sos',fs=fs)
+    else: # None filtering
+        return signals 
+    filtered = signal.sosfilt(sos,signals)
+    return filtered

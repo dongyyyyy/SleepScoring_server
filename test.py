@@ -15,7 +15,9 @@ from utils.makeDataset.SeoulUniv.check_dataset_info import *
 use_cudaNum = 1
 
 if __name__=='__main__':
-    check_severity()
+    make_dataloader_dataset()
+    # make_edf_to_npy_usingmne()
+    # check_severity()
     # make_selectChannel_npy()
     # makeFeatureExtract_savefile()
     # make_edf_to_npy_usingmne()

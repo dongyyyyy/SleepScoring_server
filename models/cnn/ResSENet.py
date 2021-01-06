@@ -280,3 +280,174 @@ class resnet50se_200hz_withDropout_ensemble_branch_twoChannel(nn.Module):
 
         out = self.classification(out)
         return out
+
+class resnet50se_200hz_withDropout_ensemble_branch_twoChannel_Attention_Sigmoid(nn.Module):
+    def __init__(self, block=ResSEBlock_withDropout, layers=[3,4,6,3], eeg_channel=[0], eog_channel=[1],
+                 layer_filters=[64, 128, 256, 512], first_conv_small=[99, 20, 49],first_conv_big=[399, 20, 199], block_kernel_size=3, padding=1,
+                 use_batchnorm=True,embedding_size=512,
+                 num_classes=5,sample_rate = 200,epoch_size=30, progress=True):
+        super(resnet50se_200hz_withDropout_ensemble_branch_twoChannel_Attention_Sigmoid, self).__init__()
+        self.eeg_channel = eeg_channel
+        self.eog_channel = eog_channel
+        self.eeg_featureExtract_small = ResSENet(block=block, layers=layers,in_channel=len(eeg_channel), first_conv=first_conv_small,layers_num=layer_filters)
+
+        self.eeg_featureExtract_big = ResSENet(block=block, layers=layers,in_channel=len(eeg_channel), first_conv=first_conv_big,layers_num=layer_filters)
+
+
+        self.eog_featureExtract = ResSENet(block=block, layers=layers,in_channel=len(eog_channel), first_conv=first_conv_big,layers_num=layer_filters)
+
+        self.small_sizefilter = math.ceil(math.ceil(math.ceil(math.ceil(math.ceil((sample_rate * epoch_size)/first_conv_small[1])/2)/2)/2)/2)
+        self.big_sizefilter = math.ceil(math.ceil(math.ceil(math.ceil(math.ceil((sample_rate * epoch_size)/first_conv_big[1])/2)/2)/2)/2)
+        
+        self.gap_eeg_small = nn.AdaptiveAvgPool1d(1) # GAP
+        self.gap_eeg_big = nn.AdaptiveAvgPool1d(1) # GAP
+        self.gap_eog = nn.AdaptiveAvgPool1d(1) # GAP
+
+        self.conditional_layer1 = nn.Linear(layer_filters[3]*4,layer_filters[3]*2) 
+        
+        self.conditional_layer2 = nn.Linear(layer_filters[3]*2,3) 
+        self.sigmoid = nn.Sigmoid()
+        self.softmax = nn.Softmax(dim=1)
+        self.dropout = nn.Dropout(p=0.5)
+
+        self.dropout = nn.Dropout(p=0.5)
+
+        self.conv = nn.Conv1d(layer_filters[3]*4*3, 1024, kernel_size=self.big_sizefilter, stride=self.big_sizefilter, bias=False)
+        self.bn = nn.BatchNorm1d(1024)
+        self.relu = nn.ReLU(inplace=True)
+        self.classification = nn.Linear(1024, num_classes)
+    
+        
+
+    def forward(self, x):
+        
+        out_eeg_small = self.eeg_featureExtract_small(x[:, self.eeg_channel, :]) # 38 X 512
+        out_eeg_big = self.eeg_featureExtract_big(x[:, self.eeg_channel, :]) # 10 X 512
+        out_eog = self.eog_featureExtract(x[:, self.eog_channel, :]) # 10 X 512
+        feature_weight_eeg_small = self.gap_eeg_small(out_eeg_small) # 1 X 512
+        feature_weight_eeg_big = self.gap_eeg_big(out_eeg_big) # 1 X 512
+        feature_weight_eog = self.gap_eog(out_eog) # 1 X 512
+
+        feature_weight = feature_weight_eeg_small+feature_weight_eeg_big+feature_weight_eog
+        feature_weight = torch.flatten(feature_weight,1)
+        
+        feature_weight = self.conditional_layer1(feature_weight)
+        feature_weight = self.relu(feature_weight)
+        feature_weight = self.dropout(feature_weight)
+        feature_weight = self.conditional_layer2(feature_weight)
+
+        feature_weight = self.sigmoid(feature_weight)
+        feature_weight = self.softmax(feature_weight)
+
+        #Attention
+        out_eeg_small = feature_weight[:,0].unsqueeze(1).unsqueeze(2) * out_eeg_small # 19 X 512
+        out_eeg_big = feature_weight[:,1].unsqueeze(1).unsqueeze(2) * out_eeg_big # 19 X 512
+        out_eog = feature_weight[:,2].unsqueeze(1).unsqueeze(2) * out_eog # 19 X 512
+        
+        # channel concatenate
+        out =  torch.cat((out_eeg_big,out_eeg_small,out_eog), dim=1)
+        # print(out.shape)
+        # out = out_eeg_small + out_eeg_big + out_eog
+
+        out = self.dropout(out)
+
+        out = self.conv(out)
+        out = self.bn(out)
+        out = self.relu(out)
+        
+        out = torch.flatten(out,1)
+        out = self.dropout(out)
+
+        out = self.classification(out)
+        return out
+
+
+class resnet50se_200hz_withDropout_ensemble_branch_twoChannel_Attention_Sigmoid_Channels_small_additional(nn.Module):
+    def __init__(self, block=ResSEBlock_withDropout, layers=[3,4,6,3], eeg_channel=[0], eog_channel=[1],
+                 layer_filters=[32, 64, 128, 256], first_conv_small=[99, 20, 49],first_conv_big=[399, 20, 199], block_kernel_size=3, padding=1,
+                 use_batchnorm=True,embedding_size=512,
+                 num_classes=5,sample_rate = 200,epoch_size=30, progress=True):
+        super(resnet50se_200hz_withDropout_ensemble_branch_twoChannel_Attention_Sigmoid_Channels_small_additional, self).__init__()
+        self.eeg_channel = eeg_channel
+        self.eog_channel = eog_channel
+        self.eeg_featureExtract_small = ResSENet(block=block, layers=layers,in_channel=len(eeg_channel), first_conv=first_conv_small,layers_num=layer_filters)
+
+        self.eeg_featureExtract_big = ResSENet(block=block, layers=layers,in_channel=len(eeg_channel), first_conv=first_conv_big,layers_num=layer_filters)
+
+
+        self.eog_featureExtract = ResSENet(block=block, layers=layers,in_channel=len(eog_channel), first_conv=first_conv_big,layers_num=layer_filters)
+
+        self.small_sizefilter = math.ceil(math.ceil(math.ceil(math.ceil(math.ceil((sample_rate * epoch_size)/first_conv_small[1])/2)/2)/2)/2)
+        self.big_sizefilter = math.ceil(math.ceil(math.ceil(math.ceil(math.ceil((sample_rate * epoch_size)/first_conv_big[1])/2)/2)/2)/2)
+        
+        self.gap_eeg_small = nn.AdaptiveAvgPool1d(1) # GAP
+        self.gap_eeg_big = nn.AdaptiveAvgPool1d(1) # GAP
+        self.gap_eog = nn.AdaptiveAvgPool1d(1) # GAP
+
+        self.conditional_layer1 = nn.Linear(layer_filters[3]*4,layer_filters[3]*2) 
+        
+        self.conditional_layer2 = nn.Linear(layer_filters[3]*2,3) 
+        self.sigmoid = nn.Sigmoid()
+
+        # self.conditional_layer1 = nn.Linear(layer_filters[3]*4*3,layer_filters[3]*4*3//4) 
+        
+        # self.conditional_layer2 = nn.Linear(layer_filters[3]*4*3//4,layer_filters[3]*4*3) 
+        # self.sigmoid = nn.Sigmoid()
+        # self.softmax = nn.Softmax(dim=1)
+        self.dropout = nn.Dropout(p=0.5)
+
+        self.dropout = nn.Dropout(p=0.5)
+
+        self.fc1 = nn.Linear(layer_filters[3]*4,layer_filters[3]*4//2)
+        
+        self.relu = nn.ReLU(inplace=True)
+        self.classification = nn.Linear(layer_filters[3]*4//2, num_classes)
+        self.feature_size = layer_filters[3]*4
+        print('branch output size : ',self.feature_size)    
+        
+    def forward(self, x):
+        
+        out_eeg_small = self.eeg_featureExtract_small(x[:, self.eeg_channel, :]) # 38 X 512
+        out_eeg_big = self.eeg_featureExtract_big(x[:, self.eeg_channel, :]) # 10 X 512
+        out_eog = self.eog_featureExtract(x[:, self.eog_channel, :]) # 10 X 512
+        
+        out_eeg_small = self.gap_eeg_small(out_eeg_small) # 1 X 512
+        out_eeg_big = self.gap_eeg_big(out_eeg_big) # 1 X 512
+        out_eog = self.gap_eog(out_eog) # 1 X 512
+
+        feature_weight = out_eeg_small + out_eeg_big + out_eog
+        feature_weight = torch.flatten(feature_weight,1)
+        
+        feature_weight = self.conditional_layer1(feature_weight)
+        feature_weight = self.relu(feature_weight)
+        feature_weight = self.dropout(feature_weight)
+        feature_weight = self.conditional_layer2(feature_weight)
+
+        feature_weight = self.sigmoid(feature_weight) # self.feature_size * 3
+        # feature_weight = self.softmax(feature_weight)
+        #Attention
+        out_eeg_small = feature_weight[:,0].unsqueeze(1).unsqueeze(2) * out_eeg_small # 19 X 512
+        out_eeg_big = feature_weight[:,1].unsqueeze(1).unsqueeze(2) * out_eeg_big # 19 X 512
+        out_eog = feature_weight[:,2].unsqueeze(1).unsqueeze(2) * out_eog # 19 X 512
+        # feature_weight = self.softmax(feature_weight)
+        #Attention
+
+        
+        # channel concatenate
+        # print(out.shape)
+        # out = out_eeg_small + out_eeg_big + out_eog
+        out =  out_eeg_small + out_eeg_big + out_eog
+        
+        #Attention
+        # out = feature_weight.unsqueeze(2) * out
+
+        out = torch.flatten(out,1)    
+
+        out = self.dropout(out)
+
+        out = self.fc1(out)
+        out = self.relu(out)
+        out = self.dropout(out)
+
+        out = self.classification(out)
+        return out

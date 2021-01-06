@@ -22,6 +22,7 @@ import shutil
 
 
 from scipy import signal
+from scipy.signal import butter,filtfilt, lfilter
 import mne
 from tqdm import tnrange, tqdm
 
@@ -29,7 +30,7 @@ import multiprocessing
 from multiprocessing import Process, Manager, Pool, Lock
 
 from functools import partial
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # device2 = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 # device3 = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
